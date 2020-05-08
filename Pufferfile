@@ -2,7 +2,6 @@ puffers:
   http:
     services:
       airtable:
-        name: ""
         baseurl: https://api.airtable.com
         routes:
           '*':
