@@ -1,0 +1,13 @@
+puffers:
+  http:
+    services:
+      airtable:
+        name: ""
+        baseurl: https://api.airtable.com
+        routes:
+          '*':
+            apikey: ""
+            cache:
+              expires: 1h0m0s
+              maxsize: 20000000 #in bytes
+              host: ""
