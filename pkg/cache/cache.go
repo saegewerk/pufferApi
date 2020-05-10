@@ -8,9 +8,10 @@ import (
 type Cache struct {
 	Expires time.Duration
 	MaxSize int64
+	Client  *redis.Client
 	Host    string
-	client  *redis.Client
 }
+
 type Config struct {
 	Expires time.Duration
 	MaxSize int64

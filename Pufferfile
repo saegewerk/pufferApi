@@ -5,8 +5,14 @@ puffers:
         baseurl: https://api.airtable.com
         routes:
           '*':
+            apikey: "keyWgchnviz5aPcR2"
+            cache:
+              expires: 1h0m0s
+              maxsize: 20000000 #in bytes
+              host: "redis"
+          '/test':
             apikey: ""
             cache:
               expires: 1h0m0s
               maxsize: 20000000 #in bytes
-              host: ""
+              host: "redis"

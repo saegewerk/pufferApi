@@ -13,10 +13,12 @@ func (pool *Pool) SetCache(client, key, value string, expires time.Duration) (er
 	_, err = pool.clients[client].Set(key, value, expires).Result()
 	return err
 }
+
 func (pool *Pool) GetCache(client, key string) (value string, err error) {
 	value, err = pool.clients[client].Get(key).Result()
 	return value, err
 }
+
 func (pool *Pool) Add(config *Config) (client *redis.Client) {
 	if c, ok := pool.clients[config.Host]; !ok {
 		pool.clients[config.Host] = redis.NewClient(&redis.Options{

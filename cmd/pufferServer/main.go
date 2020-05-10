@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pufferApi/pkg/config"
 	"github.com/pufferApi/pkg/puffer"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
@@ -12,7 +13,9 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	p := puffer.Create(*conf)
-	println(p)
+	p.ListenAndServe()
+	s, _ := yaml.Marshal(p)
+	println(s)
 }
 
 /*
