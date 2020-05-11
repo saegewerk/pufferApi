@@ -7,7 +7,6 @@ import (
 	"github.com/pufferApi/pkg/config"
 	"github.com/pufferApi/pkg/proxy"
 	"github.com/valyala/fasthttp"
-	"regexp"
 )
 
 type Puffers struct {
@@ -15,12 +14,9 @@ type Puffers struct {
 	Pool    cache.Pool
 }
 
-const pattern = `(?m)/(?:\/)?([^\/]+)(.*)`
-
-var regEx *regexp.Regexp
-
 func Create(config config.Config) (puffers Puffers) {
 	puffers.Proxies = make(map[string]proxy.Proxy)
+	puffers.Pool = cache.CreatePool()
 	for name, puffer := range config.Puffers {
 		puffers.Proxies[name] = proxy.Create(puffer)
 	}
@@ -41,12 +37,21 @@ func doRequest(url string) (res string) {
 	// User-Agent: fasthttp
 	// Body:
 }
+func splitURI(uri string) (res [2]string) {
 
+	for i := 1; i < len(uri); i++ {
+		if uri[i] == '/' {
+			res[0] = uri[1:i]
+			res[1] = uri[i:len(uri)]
+			break
+		}
+	}
+	return res
+}
 func (puffers Puffers) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 	fmt.Fprintf(ctx, "Hi there! RequestURI is %q", ctx.RequestURI())
 	println(string(ctx.RequestURI()))
-	g := []string{"", ""}
-	copy(g, regEx.FindAllString(string(ctx.RequestURI()), 2))
+	g := splitURI(string(ctx.RequestURI()))
 
 	println(g[0], "; ", g[1])
 
@@ -74,7 +79,6 @@ func (puffers Puffers) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func (puffers Puffers) ListenAndServe() (err error) {
-	regEx, err = regexp.Compile(pattern)
 	if err != nil {
 		return err
 	}

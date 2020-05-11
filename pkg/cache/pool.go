@@ -9,13 +9,18 @@ type Pool struct {
 	clients map[string]*redis.Client
 }
 
+func CreatePool() Pool {
+	return Pool{
+		clients: make(map[string]*redis.Client),
+	}
+}
 func (pool *Pool) SetCache(client, key, value string, expires time.Duration) (err error) {
 	_, err = pool.clients[client].Set(key, value, expires).Result()
 	return err
 }
 
 func (pool *Pool) GetCache(client, key string) (value string, err error) {
-	value, err = pool.clients[client].Get(key).Result()
+	value, err = (*pool).clients[client].Get(key).Result()
 	return value, err
 }
 
