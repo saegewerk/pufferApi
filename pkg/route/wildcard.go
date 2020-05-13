@@ -13,11 +13,12 @@ type WildcardNode struct {
 }
 
 func (root *WildcardRoot) Add(path string) {
-	tokens := strings.Split(path, "/")[1:]
-	if len(root.Nodes) == 0 {
+	if path == "*" {
 		root.IsRoute = true
 		return
 	}
+	tokens := strings.Split(path, "/")[1:]
+
 	if _, ok := root.Nodes[tokens[0]]; !ok {
 		root.Nodes[tokens[0]] = WildcardNode{
 			Nodes: make(map[string]WildcardNode),
@@ -62,6 +63,9 @@ func (root *WildcardRoot) Find(path string) string {
 	if node, ok := root.Nodes[tokens[0]]; ok {
 		actRoute += tokens[0]
 		node.Find(&tokens, &actRoute, &lastRoute, &depth)
+	}
+	if root.IsRoute {
+		return "*"
 	}
 	return lastRoute
 }

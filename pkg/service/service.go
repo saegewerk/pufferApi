@@ -17,6 +17,11 @@ type Service struct {
 	HasWildcards bool
 }
 
+func (service *Service) PrintRoutes() {
+	for name, _ := range service.Routes {
+		println(name)
+	}
+}
 func Create(config Config) (service Service) {
 	service.BaseUrl = config.BaseUrl
 	service.Routes = make(map[string]route.Route)
@@ -24,7 +29,6 @@ func Create(config Config) (service Service) {
 		if path[len(path)-1] == '/' {
 			service.Routes[path[:len(path)-1]] = route.Create(r, false)
 		} else if path[len(path)-1] == '*' {
-
 			if !service.HasWildcards {
 				service.HasWildcards = true
 				service.Wildcards = route.CreateWildcards()
@@ -33,9 +37,11 @@ func Create(config Config) (service Service) {
 				service.Routes[path[:len(path)-2]] = route.Create(r, true)
 				service.Wildcards.Add(path[:len(path)-2])
 			} else {
-				service.Routes[path[:len(path)-1]] = route.Create(r, true)
-				service.Wildcards.Add(path[:len(path)-1])
+				service.Routes["*"] = route.Create(r, true)
+				service.Wildcards.Add("*")
 			}
+		} else {
+			service.Routes[path[:len(path)]] = route.Create(r, false)
 		}
 	}
 
