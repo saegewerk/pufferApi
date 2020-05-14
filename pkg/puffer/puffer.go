@@ -29,13 +29,17 @@ func Create(config config.Config) (puffers Puffers) {
 	//puffers.Pool.PrintPools()
 	return puffers
 }
-func doRequest(url string, apikey string) (res string) {
+func doRequest(url string, headers map[string]string) (res string) {
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(req)   // <- do not forget to release
 	defer fasthttp.ReleaseResponse(resp) // <- do not forget to release
-	println(apikey)
-	req.Header.Add("Authorization", apikey)
+
+	for key, value := range headers {
+		println(key + ": " + value)
+		req.Header.Add(key, value)
+	}
+
 	req.SetRequestURI(url)
 
 	fasthttp.Do(req, resp)
@@ -67,7 +71,7 @@ func (puffers Puffers) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 		if route, ok := service.Routes[path]; ok {
 			cached, err := puffers.Pool.GetCache(route.Cache.Host, g[1])
 			if err == redis.Nil {
-				cached = doRequest(service.BaseUrl+g[1], route.Apikey)
+				cached = doRequest(service.BaseUrl+g[1], route.Headers)
 				puffers.Pool.SetCache(service.Routes[path].Cache.Host, g[0]+g[1], cached, route.Cache.Expires)
 				ctx.Response.AppendBodyString(cached)
 			}
@@ -79,7 +83,7 @@ func (puffers Puffers) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 				cached, err := puffers.Pool.GetCache(service.Routes[path].Cache.Host, serviceName+path)
 				if err == redis.Nil {
 					println("NotCached")
-					cached = doRequest(service.BaseUrl+g[1], service.Routes[path].Apikey)
+					cached = doRequest(service.BaseUrl+g[1], service.Routes[path].Headers)
 					puffers.Pool.SetCache(service.Routes[path].Cache.Host, serviceName+path, cached, service.Routes[path].Cache.Expires)
 				} else if err != nil {
 					println(err.Error())
