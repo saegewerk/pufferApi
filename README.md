@@ -8,7 +8,7 @@ Granular control over caching
 See YAML Pufferfile for configuration in the example
 
 You can always set a cache in every node of the structure, this configuration will then be propagated 
-to the route cache, if there's a cache declared under the a node this will be the prioritised cache config
+to the route cache, if there's a cache declared under a node this will be the prioritised cache config
 
 !Attention if u have a query in the url string it will create its own cache in the router and will be only accessible trough
 the same query parameters
