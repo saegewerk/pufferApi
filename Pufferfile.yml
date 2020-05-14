@@ -16,3 +16,18 @@ puffers:
               expires: 1h0m0s
               maxsize: 20000000 #in bytes
               host: "redis:5234"
+      myawesomeservice:
+        baseurl: https://some.example.com
+        routes:
+          '*':
+            headers:
+              - "AKey: AValue"
+            cache:
+              expires: 0h2m00s
+              maxsize: 20000000 #in bytes
+              host: "localhost:6379"
+          '/test':
+            cache:
+              expires: 1h0m0s
+              maxsize: 20000000 #in bytes
+              host: "redis:5234"
