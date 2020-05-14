@@ -11,7 +11,7 @@ type Config struct {
 }
 
 func YAML() (config *Config, err error) {
-	return YAMLfromFile("./Pufferfile")
+	return YAMLfromFile("./Pufferfile.yml")
 }
 
 func YAMLfromFile(file string) (config *Config, err error) {
