@@ -25,9 +25,6 @@ func (pool *Pool) SetCache(client, key, value string, expires time.Duration) (er
 }
 
 func (pool *Pool) GetCache(client, key string) (value string, err error) {
-	println("-----")
-	println(client)
-
 	value, err = pool.clients[client].Get(key).Result()
 	return value, err
 }
