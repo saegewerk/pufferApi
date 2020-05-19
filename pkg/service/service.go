@@ -22,6 +22,7 @@ func (service *Service) PrintRoutes() {
 		println(name)
 	}
 }
+
 func Create(config Config) (service Service) {
 	service.BaseUrl = config.BaseUrl
 	service.Routes = make(map[string]route.Route)
