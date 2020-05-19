@@ -5,7 +5,7 @@ Only GET is supported
 
 Granular control over caching
 
-See YAML Pufferfile for configuration in the example
+See YAML Pufferfile for configuration
 
 You can always set a cache in every node of the structure, this configuration will then be propagated 
 to the route cache, if there's a cache declared under a node this will be the prioritised cache config
