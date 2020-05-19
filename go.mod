@@ -1,4 +1,4 @@
-module github.com/pufferApi
+module github.com/saegewerk/pufferApi
 
 go 1.14
 
