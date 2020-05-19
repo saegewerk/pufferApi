@@ -1,8 +1,8 @@
 package route
 
 import (
-	"github.com/pufferApi/pkg/access"
-	"github.com/pufferApi/pkg/cache"
+	"github.com/saegewerk/pufferApi/pkg/access"
+	"github.com/saegewerk/pufferApi/pkg/cache"
 	"strings"
 )
 

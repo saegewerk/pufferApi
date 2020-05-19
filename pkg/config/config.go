@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/pufferApi/pkg/proxy"
+	"github.com/saegewerk/pufferApi/pkg/proxy"
 	"gopkg.in/yaml.v2"
 	"os"
 )

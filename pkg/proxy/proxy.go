@@ -1,8 +1,8 @@
 package proxy
 
 import (
-	"github.com/pufferApi/pkg/cache"
-	"github.com/pufferApi/pkg/service"
+	"github.com/saegewerk/pufferApi/pkg/cache"
+	"github.com/saegewerk/pufferApi/pkg/service"
 )
 
 type Config struct {

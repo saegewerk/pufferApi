@@ -2,9 +2,9 @@ package puffer
 
 import (
 	"github.com/go-redis/redis/v7"
-	"github.com/pufferApi/pkg/cache"
-	"github.com/pufferApi/pkg/config"
-	"github.com/pufferApi/pkg/proxy"
+	"github.com/saegewerk/pufferApi/pkg/cache"
+	"github.com/saegewerk/pufferApi/pkg/config"
+	"github.com/saegewerk/pufferApi/pkg/proxy"
 	"github.com/valyala/fasthttp"
 	"time"
 )

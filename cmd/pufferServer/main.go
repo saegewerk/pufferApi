@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/pufferApi/pkg/config"
-	"github.com/pufferApi/pkg/puffer"
+	"github.com/saegewerk/pufferApi/pkg/config"
+	"github.com/saegewerk/pufferApi/pkg/puffer"
 	"gopkg.in/yaml.v2"
 )
 

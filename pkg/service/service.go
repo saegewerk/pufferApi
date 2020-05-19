@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/pufferApi/pkg/cache"
-	"github.com/pufferApi/pkg/route"
+	"github.com/saegewerk/pufferApi/pkg/cache"
+	"github.com/saegewerk/pufferApi/pkg/route"
 )
 
 type Config struct {
