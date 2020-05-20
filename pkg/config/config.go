@@ -1,13 +1,14 @@
 package config
 
 import (
-	"github.com/saegewerk/pufferApi/pkg/proxy"
+	"github.com/saegewerk/pufferApi/pkg/service"
 	"gopkg.in/yaml.v2"
 	"os"
 )
 
 type Config struct {
-	Puffers map[string]proxy.Config
+	Services map[string]service.Config
+	Port     string
 }
 
 func YAML() (config *Config, err error) {

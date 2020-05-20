@@ -1,33 +1,53 @@
 package puffer
 
 import (
+	"bytes"
 	"github.com/go-redis/redis/v7"
 	"github.com/saegewerk/pufferApi/pkg/cache"
 	"github.com/saegewerk/pufferApi/pkg/config"
-	"github.com/saegewerk/pufferApi/pkg/proxy"
+	"github.com/saegewerk/pufferApi/pkg/service"
 	"github.com/valyala/fasthttp"
+	"strconv"
 	"time"
 )
 
-type Puffers struct {
-	Proxies map[string]proxy.Proxy
-	Pool    cache.Pool
+type Puffer struct {
+	Services map[string]service.Service
+	Port     int
+	Pool     cache.Pool
 }
 
-func Create(config config.Config) (puffers Puffers) {
-	puffers.Proxies = make(map[string]proxy.Proxy)
-	puffers.Pool = cache.CreatePool()
-	for name, puffer := range config.Puffers {
-		puffers.Proxies[name] = proxy.Create(puffer)
-		for _, service := range puffers.Proxies[name].Services {
+func StringToPort(name string) (int, error) {
+	switch name {
+	case "http":
+		return 80, nil
+
+	case "https":
+		return 443, nil
+	}
+	return strconv.Atoi(name)
+}
+func Create(config config.Config) (puffer Puffer) {
+	puffer.Services = make(map[string]service.Service)
+	puffer.Pool = cache.CreatePool()
+	port, err := StringToPort(config.Port)
+	if err != nil {
+		println(err.Error())
+	}
+	puffer.Port = port
+	for name, configService := range config.Services {
+
+		puffer.Services[name] = service.Create(configService)
+
+		for _, service := range puffer.Services {
 			for _, route := range service.Routes {
-				route.Cache.Client = puffers.Pool.Add(route.Cache.Host)
+				route.Cache.Client = puffer.Pool.Add(route.Cache.Host)
 			}
 		}
 	}
 
 	//puffers.Pool.PrintPools()
-	return puffers
+	return puffer
 }
 func doRequest(url string, headers map[string]string) (res string) {
 	req := fasthttp.AcquireRequest()
@@ -38,12 +58,13 @@ func doRequest(url string, headers map[string]string) (res string) {
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
-
+	req.Header.SetMethod("GET")
 	req.SetRequestURI(url)
 
 	fasthttp.Do(req, resp)
 
 	res = string(resp.Body())
+	resp.Header.ContentType()
 	return res
 	// User-Agent: fasthttp
 	// Body:
@@ -59,76 +80,93 @@ func splitURI(uri string) (res [2]string) {
 	}
 	return res
 }
-func (puffers Puffers) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
-	g := splitURI(string(ctx.RequestURI()))
-	serviceName := g[0]
-	path := g[1]
+func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
+	pool := &puffer.Pool
+	if bytes.Compare(ctx.Request.Header.Method(), []byte("GET")) == 0 {
+		g := splitURI(string(ctx.RequestURI()))
+		serviceName := g[0]
+		path := g[1]
 
-	var err error
-	if service, ok := puffers.Proxies["http"].Services[serviceName]; ok {
-		if route, ok := service.Routes[path]; ok {
-			if route.Cache.HasMemcache {
-				now := time.Now()
-				if now.Sub(route.Cache.Memcache.Expires) < 0 {
-					route.Cache.Memcache.Store, err = puffers.Pool.GetCache(route.Cache.Host, path)
-					if err == redis.Nil {
-						route.Cache.Memcache.Store = doRequest(service.BaseUrl+path, route.Headers)
-						puffers.Pool.SetCache(service.Routes[path].Cache.Host, serviceName+path, route.Cache.Memcache.Store, route.Cache.Expires)
-					} else if err != nil {
-						println(err.Error())
-					}
-					route.Cache.Memcache.Expires = route.Cache.Memcache.Expires.Add(route.Cache.Expires)
-					service.Routes[path] = route
-				}
-				ctx.Response.AppendBodyString(route.Cache.Memcache.Store)
-			} else {
-				cached, err := puffers.Pool.GetCache(route.Cache.Host, path)
-				if err == redis.Nil {
-					cached = doRequest(service.BaseUrl+g[1], route.Headers)
-					puffers.Pool.SetCache(service.Routes[path].Cache.Host, g[0]+g[1], cached, route.Cache.Expires)
-				} else if err != nil {
-					println(err.Error())
-				}
-				ctx.Response.AppendBodyString(cached)
-			}
-		} else {
-			if service.HasWildcards {
-				path = service.Wildcards.Find(path)
-				route = service.Routes[path]
+		var err error
+		if service, ok := puffer.Services[serviceName]; ok {
+			if route, ok := service.Routes[path]; ok {
 				if route.Cache.HasMemcache {
 					now := time.Now()
-					if route.Cache.Memcache.Expires.Sub(now) < 0 {
-						route.Cache.Memcache.Store, err = puffers.Pool.GetCache(route.Cache.Host, serviceName+g[1])
+					if now.Sub(route.Cache.Memcache.Expires) < 0 {
+						route.Cache.Memcache.Store, err = pool.GetCache(route.Cache.Host, path)
+						ctx.Response.Header.Add("X-Cache-Info", "Redis")
 						if err == redis.Nil {
-							route.Cache.Memcache.Store = doRequest(service.BaseUrl+g[1], route.Headers)
-							puffers.Pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], route.Cache.Memcache.Store, route.Cache.Expires)
+							route.Cache.Memcache.Store = doRequest(service.BaseUrl+path, route.Headers)
+							pool.SetCache(service.Routes[path].Cache.Host, serviceName+path, route.Cache.Memcache.Store, route.Cache.Expires)
+							ctx.Response.Header.Set("X-Cache-Info", "None")
 						} else if err != nil {
 							println(err.Error())
 						}
-						route.Cache.Memcache.Expires = now.Add(route.Cache.Expires)
+						route.Cache.Memcache.Expires = route.Cache.Memcache.Expires.Add(route.Cache.Expires)
 						service.Routes[path] = route
+					} else {
+						ctx.Response.Header.Add("X-Cache-Info", "Memcache")
 					}
 					ctx.Response.AppendBodyString(route.Cache.Memcache.Store)
 				} else {
-					cached, err := puffers.Pool.GetCache(service.Routes[path].Cache.Host, serviceName+g[1])
+					cached, err := pool.GetCache(route.Cache.Host, path)
+					ctx.Response.Header.Add("X-Cache-Info", "Redis")
 					if err == redis.Nil {
-						cached = doRequest(service.BaseUrl+g[1], service.Routes[path].Headers)
-						puffers.Pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], cached, service.Routes[path].Cache.Expires)
+						ctx.Response.Header.Set("X-Cache-Info", "None")
+						cached = doRequest(service.BaseUrl+g[1], route.Headers)
+						pool.SetCache(service.Routes[path].Cache.Host, g[0]+g[1], cached, route.Cache.Expires)
 					} else if err != nil {
 						println(err.Error())
 					}
 					ctx.Response.AppendBodyString(cached)
 				}
+			} else if service.HasWildcards {
+				path = service.Wildcards.Find(path)
+				route = service.Routes[path]
+				if route.Cache.HasMemcache {
+					now := time.Now()
+					if route.Cache.Memcache.Expires.Sub(now) < 0 {
+						route.Cache.Memcache.Store, err = pool.GetCache(route.Cache.Host, serviceName+g[1])
+						ctx.Response.Header.Add("X-Cache-Info", "Redis")
+						if err == redis.Nil {
+							ctx.Response.Header.Set("X-Cache-Info", "None")
+							route.Cache.Memcache.Store = doRequest(service.BaseUrl+g[1], route.Headers)
+							pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], route.Cache.Memcache.Store, route.Cache.Expires)
+						} else if err != nil {
+							println(err.Error())
+						}
+						route.Cache.Memcache.Expires = now.Add(route.Cache.Expires)
+						service.Routes[path] = route
+					} else {
+						ctx.Response.Header.Add("X-Cache-Info", "Memcache")
+					}
+					ctx.Response.AppendBodyString(route.Cache.Memcache.Store)
+				} else {
+					cached, err := pool.GetCache(service.Routes[path].Cache.Host, serviceName+g[1])
+					ctx.Response.Header.Add("X-Cache-Info", "Redis")
+					if err == redis.Nil {
+						ctx.Response.Header.Set("X-Cache-Info", "None")
+						cached = doRequest(service.BaseUrl+g[1], service.Routes[path].Headers)
+						pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], cached, service.Routes[path].Cache.Expires)
+					} else if err != nil {
+						println(err.Error())
+					}
+					ctx.Response.AppendBodyString(cached)
+				}
+			} else {
+				ctx.Response.SetStatusCode(404)
 			}
+		} else {
+			ctx.Response.SetStatusCode(404)
 		}
+	} else {
+		ctx.Response.Header.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 	}
 }
 
-func (puffers Puffers) ListenAndServe() (err error) {
-	if err != nil {
-		return err
-	}
-	fasthttp.ListenAndServe(":8000", puffers.fastHTTPHandler)
+func (puffer Puffer) ListenAndServe() (err error) {
+
+	fasthttp.ListenAndServe(":"+strconv.Itoa(puffer.Port), puffer.fastHTTPHandler)
 	return nil
 }
 

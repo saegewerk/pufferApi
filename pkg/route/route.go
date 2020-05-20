@@ -1,7 +1,6 @@
 package route
 
 import (
-	"github.com/saegewerk/pufferApi/pkg/access"
 	"github.com/saegewerk/pufferApi/pkg/cache"
 	"strings"
 )
@@ -9,12 +8,10 @@ import (
 type Config struct {
 	Headers []string
 	Cache   cache.Config
-	access.Access
 }
 
 type Route struct {
-	Cache cache.Cache
-	access.Access
+	Cache    cache.Cache
 	Wildcard bool
 	Headers  map[string]string
 }
