@@ -6,8 +6,8 @@ FROM golang:1.14.2
 # either manually or with a tool like "godep".)
 #RUN go get /go/src/github.com/saegewerk/QGTodo/...
 ADD . /go/src/github.com/saegewerk/pufferApi
+RUN cd /go/src/github.com/saegewerk/pufferApi && go mod download && go get /go/src/github.com/saegewerk/pufferApi/...
 
-RUN go get /go/src/github.com/saegewerk/pufferApi/...
 
 # Run the outyet command by default when the container starts.
 ENTRYPOINT /go/bin/pufferServer /go/src/github.com/saegewerk/pufferApi/Pufferfile.yml

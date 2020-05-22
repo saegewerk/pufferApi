@@ -10,7 +10,7 @@ services:
         cache:
           expires: 0h10m00s
           maxsize: 20000000 #in bytes
-          host: "localhost:6379"
+          host: "redis:6379"
           memcache: true #attention the memcache will ask the cache host first if no host is defined it will request the url
       '/test':
         cache:
