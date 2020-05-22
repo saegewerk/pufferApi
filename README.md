@@ -21,7 +21,18 @@ the same query parameters
 
 ## TODO
 - Cache
+    - size limit 
+        - reject to cache
+        - block query
+            - after x requests
+            - rate limit
     - add response headers to cache
     - create Scheduler
         - interval
         - fixed time
+- Log
+    - connections
+    - tests against redis connection
+    - config
+
+    
