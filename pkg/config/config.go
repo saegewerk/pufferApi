@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/saegewerk/pufferApi/pkg/cache"
 	"github.com/saegewerk/pufferApi/pkg/service"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -9,6 +10,7 @@ import (
 type Config struct {
 	Services map[string]service.Config
 	Port     string
+	Cache    cache.Config
 }
 
 func YAML() (config *Config, err error) {

@@ -27,6 +27,9 @@ func Create(config Config) (service Service) {
 	service.BaseUrl = config.BaseUrl
 	service.Routes = make(map[string]route.Route)
 	for path, r := range config.Routes {
+		if r.Cache == (cache.Config{}) {
+			r.Cache = config.Cache
+		}
 		if path[len(path)-1] == '/' {
 			service.Routes[path[:len(path)-1]] = route.Create(r, false)
 		} else if path[len(path)-1] == '*' {

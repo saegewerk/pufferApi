@@ -36,16 +36,16 @@ func Create(config config.Config) (puffer Puffer) {
 	}
 	puffer.Port = port
 	for name, configService := range config.Services {
-
+		if configService.Cache == (cache.Config{}) {
+			configService.Cache = config.Cache
+		}
 		puffer.Services[name] = service.Create(configService)
-
-		for _, service := range puffer.Services {
-			for _, route := range service.Routes {
-				route.Cache.Client = puffer.Pool.Add(route.Cache.Host)
-			}
+	}
+	for _, service := range puffer.Services {
+		for _, route := range service.Routes {
+			route.Cache.Client = puffer.Pool.Add(route.Cache.Host)
 		}
 	}
-
 	//puffers.Pool.PrintPools()
 	return puffer
 }
@@ -90,6 +90,12 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 		var err error
 		if service, ok := puffer.Services[serviceName]; ok {
 			if route, ok := service.Routes[path]; ok {
+				if route.Cache.HasApikey {
+					if !(string(ctx.Request.Header.Peek("Proxy-Authorization")) == route.Cache.Apikey) {
+						ctx.Response.SetStatusCode(fasthttp.StatusForbidden)
+						return
+					}
+				}
 				if route.Cache.HasMemcache {
 					now := time.Now()
 					if now.Sub(route.Cache.Memcache.Expires) < 0 {
@@ -123,6 +129,12 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 			} else if service.HasWildcards {
 				path = service.Wildcards.Find(path)
 				route = service.Routes[path]
+				if route.Cache.HasApikey {
+					if !(string(ctx.Request.Header.Peek("Proxy-Authorization")) == route.Cache.Apikey) {
+						ctx.Response.SetStatusCode(fasthttp.StatusForbidden)
+						return
+					}
+				}
 				if route.Cache.HasMemcache {
 					now := time.Now()
 					if route.Cache.Memcache.Expires.Sub(now) < 0 {

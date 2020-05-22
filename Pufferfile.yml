@@ -1,17 +1,17 @@
 port: 8000
 services:
   airtable:
+    cache:
+      apikey: "thisIsSomeKey"
+      expires: 0h10m00s
+      maxsize: 20000000 #in bytes
+      host: "localhost:6379"
+      memcache: true #attention the memcache will ask the cache host first if no host is defined it will request the url
     baseurl: https://api.airtable.com
     routes:
       '*':
-        apikey: "thisIsSomeKey"
         headers: #inject or replace headers
           - "Authorization: Bearer keyWgchnviz5aPcR2"
-        cache:
-          expires: 0h10m00s
-          maxsize: 20000000 #in bytes
-          host: "redis:6379"
-          memcache: true #attention the memcache will ask the cache host first if no host is defined it will request the url
       '/test':
         cache:
           expires: 1h0m0s
