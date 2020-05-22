@@ -10,7 +10,7 @@ RUN cd /go/src/github.com/saegewerk/pufferApi && go mod download && go get /go/s
 
 
 # Run the outyet command by default when the container starts.
-ENTRYPOINT /go/bin/pufferServer /go/src/github.com/saegewerk/pufferApi/Pufferfile.yml
+ENTRYPOINT /go/bin/pufferServer /go/src/github.com/saegewerk/pufferApi/PufferfileDocker.yml
 
 # Document that the service listens on port 8080.
 EXPOSE 8000

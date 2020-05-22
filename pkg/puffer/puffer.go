@@ -91,7 +91,7 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 		if service, ok := puffer.Services[serviceName]; ok {
 			if route, ok := service.Routes[path]; ok {
 				if route.Cache.HasApikey {
-					if !(string(ctx.Request.Header.Peek("Proxy-Authorization")) == route.Cache.Apikey) {
+					if !(string(ctx.Request.Header.Peek("Authorization")) == route.Cache.Apikey) {
 						ctx.Response.SetStatusCode(fasthttp.StatusForbidden)
 						return
 					}
@@ -130,7 +130,7 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 				path = service.Wildcards.Find(path)
 				route = service.Routes[path]
 				if route.Cache.HasApikey {
-					if !(string(ctx.Request.Header.Peek("Proxy-Authorization")) == route.Cache.Apikey) {
+					if !(string(ctx.Request.Header.Peek("Authorization")) == route.Cache.Apikey) {
 						ctx.Response.SetStatusCode(fasthttp.StatusForbidden)
 						return
 					}
