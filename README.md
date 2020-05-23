@@ -1,5 +1,5 @@
 # pufferApi !!!WIP
-A fast API Gateway/Proxy, cache with scheduler options
+An API Gateway/Proxy, cache with scheduler options
 
 Only GET is supported
 
