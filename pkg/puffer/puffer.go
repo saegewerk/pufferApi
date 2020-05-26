@@ -49,6 +49,23 @@ func Create(config config.Config) (puffer Puffer) {
 	//puffers.Pool.PrintPools()
 	return puffer
 }
+func runRequest(url string, headers map[string]string) (res cache.Response) {
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseRequest(req)   // <- do not forget to release
+	defer fasthttp.ReleaseResponse(resp) // <- do not forget to release
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.SetMethod("GET")
+	req.SetRequestURI(url)
+
+	fasthttp.Do(req, resp)
+	res.Body = resp.Body()
+	res.Header = resp.Header.Header()
+	return res
+}
 func doRequest(url string, headers map[string]string) (res string) {
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -86,7 +103,6 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 		g := splitURI(string(ctx.RequestURI()))
 		serviceName := g[0]
 		path := g[1]
-
 		var err error
 		if service, ok := puffer.Services[serviceName]; ok {
 			if route, ok := service.Routes[path]; ok {
@@ -102,7 +118,7 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 						route.Cache.Memcache.Store, err = pool.GetCache(route.Cache.Host, path)
 						ctx.Response.Header.Add("X-Cache-Info", "Redis")
 						if err == redis.Nil {
-							route.Cache.Memcache.Store = doRequest(service.BaseUrl+path, route.Headers)
+							route.Cache.Memcache.Store = runRequest(service.BaseUrl+path, route.Headers)
 							pool.SetCache(service.Routes[path].Cache.Host, serviceName+path, route.Cache.Memcache.Store, route.Cache.Expires)
 							ctx.Response.Header.Set("X-Cache-Info", "None")
 						} else if err != nil {
@@ -113,18 +129,24 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 					} else {
 						ctx.Response.Header.Add("X-Cache-Info", "Memcache")
 					}
-					ctx.Response.AppendBodyString(route.Cache.Memcache.Store)
+					ctx.Response.AppendBody(route.Cache.Memcache.Store.Body)
+					ctx.Response.Header.AppendBytes(route.Cache.Memcache.Store.Body)
 				} else {
 					cached, err := pool.GetCache(route.Cache.Host, path)
 					ctx.Response.Header.Add("X-Cache-Info", "Redis")
 					if err == redis.Nil {
 						ctx.Response.Header.Set("X-Cache-Info", "None")
-						cached = doRequest(service.BaseUrl+g[1], route.Headers)
-						pool.SetCache(service.Routes[path].Cache.Host, g[0]+g[1], cached, route.Cache.Expires)
+						cached = runRequest(service.BaseUrl+g[1], route.Headers)
+						err = pool.SetCache(service.Routes[path].Cache.Host, g[0]+g[1], cached, route.Cache.Expires)
+						if err != nil {
+							println(err.Error())
+						}
 					} else if err != nil {
 						println(err.Error())
 					}
-					ctx.Response.AppendBodyString(cached)
+					ctx.Response.AppendBody(cached.Body)
+					ctx.Response.Header.ContentType()
+					ctx.Response.Header.AppendBytes(cached.Header)
 				}
 			} else if service.HasWildcards {
 				path = service.Wildcards.Find(path)
@@ -142,7 +164,7 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 						ctx.Response.Header.Add("X-Cache-Info", "Redis")
 						if err == redis.Nil {
 							ctx.Response.Header.Set("X-Cache-Info", "None")
-							route.Cache.Memcache.Store = doRequest(service.BaseUrl+g[1], route.Headers)
+							route.Cache.Memcache.Store = runRequest(service.BaseUrl+g[1], route.Headers)
 							pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], route.Cache.Memcache.Store, route.Cache.Expires)
 						} else if err != nil {
 							println(err.Error())
@@ -152,18 +174,20 @@ func (puffer *Puffer) fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 					} else {
 						ctx.Response.Header.Add("X-Cache-Info", "Memcache")
 					}
-					ctx.Response.AppendBodyString(route.Cache.Memcache.Store)
+					ctx.Response.AppendBody(route.Cache.Memcache.Store.Body)
+					ctx.Response.Header.AppendBytes(route.Cache.Memcache.Store.Header)
 				} else {
 					cached, err := pool.GetCache(service.Routes[path].Cache.Host, serviceName+g[1])
 					ctx.Response.Header.Add("X-Cache-Info", "Redis")
 					if err == redis.Nil {
 						ctx.Response.Header.Set("X-Cache-Info", "None")
-						cached = doRequest(service.BaseUrl+g[1], service.Routes[path].Headers)
+						cached = runRequest(service.BaseUrl+g[1], service.Routes[path].Headers)
 						pool.SetCache(service.Routes[path].Cache.Host, serviceName+g[1], cached, service.Routes[path].Cache.Expires)
 					} else if err != nil {
 						println(err.Error())
 					}
-					ctx.Response.AppendBodyString(cached)
+					ctx.Response.AppendBody(cached.Body)
+					ctx.Response.Header.AppendBytes(cached.Header)
 				}
 			} else {
 				ctx.Response.SetStatusCode(404)

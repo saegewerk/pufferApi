@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"github.com/go-redis/redis/v7"
 	"time"
 )
@@ -16,10 +17,23 @@ type Cache struct {
 	Apikey      string
 }
 
+type Response struct {
+	Header []byte
+	Body   []byte
+}
+
+func (m *Response) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, m)
+}
+func (m Response) MarshalBinary() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type Memcache struct {
 	Expires time.Time
-	Store   string
+	Store   Response
 }
+
 type Config struct {
 	Expires  time.Duration
 	MaxSize  int64
@@ -39,7 +53,6 @@ func Create(config Config) (cache Cache) {
 				HasMemcache: true,
 				Memcache: Memcache{
 					Expires: time.Now(),
-					Store:   "",
 				},
 			}
 		}
@@ -52,7 +65,6 @@ func Create(config Config) (cache Cache) {
 			HasMemcache: true,
 			Memcache: Memcache{
 				Expires: time.Now(),
-				Store:   "",
 			},
 		}
 	} else {

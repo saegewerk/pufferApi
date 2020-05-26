@@ -4,7 +4,7 @@ services:
     baseurl: https://api.airtable.com
     cache:
       apikey: "thisIsSomeKey"
-      expires: 0h10m00s
+      expires: 0h00m10s
       maxsize: 20000000 #in bytes
       host: "localhost:6379" #redis cache host
       memcache: true #attention the memcache will ask the cache host first if no host is defined it will request the url
